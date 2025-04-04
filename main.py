@@ -8,7 +8,8 @@ import argparse
 import torch
 import gradio as gr
 
-# 导入主应用
+# 导入配置和主应用
+from config import load_config
 from app_new import SenseYourVoiceApp
 
 # 全局应用实例
@@ -18,7 +19,8 @@ def initialize_app(model_dir, device, understanding_api_key, understanding_api_u
     """初始化应用实例"""
     global sense_app
     
-    config = {
+    # 从用户输入创建配置字典
+    user_config = {
         "model_dir": model_dir,
         "device": device,
         "understanding_api_key": understanding_api_key,
@@ -26,6 +28,9 @@ def initialize_app(model_dir, device, understanding_api_key, understanding_api_u
         "specialized_api_key": specialized_api_key,
         "specialized_api_url": specialized_api_url
     }
+    
+    # 使用load_config函数加载配置，合并用户配置和默认配置
+    config = load_config(user_config)
     
     try:
         sense_app = SenseYourVoiceApp(config)
@@ -60,17 +65,20 @@ def process_audio(audio_file, instruction):
         return None, None, None, f"处理过程发生错误: {str(e)}"
 
 def main():
-    # 解析命令行参数
+    # 加载默认配置
+    default_config = load_config()
+    
+    # 解析命令行参数，使用config中的默认值
     parser = argparse.ArgumentParser(description="SenseYourVoice - Gradio WebUI")
-    parser.add_argument("--model_dir", type=str, default="iic/SenseVoiceSmall", help="语音模型目录")
-    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu", help="设备")
-    parser.add_argument("--understanding_api_key", type=str, help="理解模块API密钥")
-    parser.add_argument("--understanding_api_url", type=str, help="理解模块API地址")
-    parser.add_argument("--specialized_api_key", type=str, help="专业任务模块API密钥")
-    parser.add_argument("--specialized_api_url", type=str, help="专业任务模块API地址")
-    parser.add_argument("--auto_init", action="store_true", help="自动初始化应用")
-    parser.add_argument("--share", action="store_true", help="创建公共链接分享界面")
-    parser.add_argument("--port", type=int, default=7860, help="服务端口")
+    parser.add_argument("--model_dir", type=str, default=default_config["model_dir"], help="语音模型目录")
+    parser.add_argument("--device", type=str, default=default_config["device"], help="设备")
+    parser.add_argument("--understanding_api_key", type=str, default=default_config["understanding_api_key"], help="理解模块API密钥")
+    parser.add_argument("--understanding_api_url", type=str, default=default_config["understanding_api_url"], help="理解模块API地址")
+    parser.add_argument("--specialized_api_key", type=str, default=default_config["specialized_api_key"], help="专业任务模块API密钥")
+    parser.add_argument("--specialized_api_url", type=str, default=default_config["specialized_api_url"], help="专业任务模块API地址")
+    parser.add_argument("--auto_init", action="store_true", default=default_config["auto_init"], help="自动初始化应用")
+    parser.add_argument("--share", action="store_true", default=default_config["share"], help="创建公共链接分享界面")
+    parser.add_argument("--port", type=int, default=default_config["port"], help="服务端口")
     args = parser.parse_args()
     
     # 创建Gradio界面
