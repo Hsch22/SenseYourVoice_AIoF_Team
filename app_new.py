@@ -49,8 +49,8 @@ class SenseYourVoiceApp:
         
         logger.info("SenseYourVoice应用初始化完成")
     
-    def process(self, audio_path, instruction=""):
-        """处理音频文件的完整流程"""
+    def process(self, audio_path, instruction="", context=""):
+        """处理音频文件的完整流程，支持多轮对话"""
         try:
             # 步骤1: 语音转文字
             logger.info(f"正在处理音频文件: {audio_path}")
@@ -63,9 +63,9 @@ class SenseYourVoiceApp:
             text = transcription_result["text"]
             logger.info(f"语音转文字完成，文本长度: {len(text)}字符")
             
-            # 步骤2: 理解与分析
+            # 步骤2: 理解与分析，传入对话历史上下文
             logger.info("开始进行文本理解与分析")
-            understanding_result = self.understanding.analyze(text, instruction)
+            understanding_result = self.understanding.analyze(text, instruction, context)
             
             if not understanding_result["success"]:
                 logger.error(f"理解分析失败: {understanding_result['error']}")

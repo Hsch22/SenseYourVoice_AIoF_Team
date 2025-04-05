@@ -18,8 +18,8 @@ class UnderstandingModule:
         self.model = model
         logger.info("理解模块初始化完成")
         
-    def analyze(self, text, instruction=""):
-        """分析文本内容并返回结果"""
+    def analyze(self, text, instruction="", context=""):
+        """分析文本内容并返回结果，支持多轮对话"""
         # 这里可以实现连接到外部LLM API的逻辑
         # 示例实现，实际使用时需要替换为真实的API调用
         try:
@@ -33,21 +33,30 @@ class UnderstandingModule:
                 }
             
             # 构建系统提示词
-            system_prompt = "你是一个专业的语音内容分析助手。你的任务是分析用户提供的语音转文字内容，并根据用户的指令提供相应的分析结果。"
+            system_prompt = "你是一个专业的语音内容分析助手。你的任务是分析用户提供的语音转文字内容，并根据用户的指令提供相应的分析结果。请保持对话的连贯性，参考之前的对话历史进行回复。"
             
             # 如果有指令，则添加到系统提示中
             if instruction:
                 system_prompt += f"\n请特别注意用户的指令: {instruction}"
+            
+            # 准备消息列表
+            messages = [{"role": "system", "content": system_prompt}]
+            
+            # 如果有对话历史上下文，添加到消息中
+            if context:
+                logger.info("添加对话历史上下文")
+                messages.append({"role": "user", "content": f"以下是之前的对话历史:\n{context}"})  
+                messages.append({"role": "assistant", "content": "我已了解之前的对话内容，请继续。"})  
+            
+            # 添加当前用户消息
+            messages.append({"role": "user", "content": text})
             
             # 实际API调用
             logger.info(f"准备调用API分析文本，文本长度: {len(text)}字符")
             headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
             payload = {
                 "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": text}
-                ]
+                "messages": messages
             }
             
             # 添加温度参数，使结果更稳定
