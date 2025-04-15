@@ -14,12 +14,12 @@ DEFAULT_CONFIG = {
     # 理解模块配置
     "understanding_api_key": os.environ.get("UNDERSTANDING_API_KEY", "sk-qseennfhdprismchczwnkzpohyjmuwgpiaywuclsisgugfvo"),
     "understanding_api_url": os.environ.get("UNDERSTANDING_API_URL", "https://api.siliconflow.cn/v1/chat/completions"),
-    "understanding_model": "Qwen/QwQ-32B",  # 默认使用的模型
+    "understanding_model": "Qwen/Qwen2.5-72B-Instruct-128K",  # 默认使用的模型
     
     # 专业任务模块配置
     "specialized_api_key": os.environ.get("SPECIALIZED_API_KEY", "sk-qseennfhdprismchczwnkzpohyjmuwgpiaywuclsisgugfvo"),
     "specialized_api_url": os.environ.get("SPECIALIZED_API_URL", "https://api.siliconflow.cn/v1/chat/completions"),
-    "specialized_model": "Qwen/QwQ-32B",  # 默认使用的模型
+    "specialized_model": "Qwen/Qwen2.5-72B-Instruct-128K",  # 默认使用的模型
     
     # 应用配置
     "auto_init": False,  # 是否自动初始化应用
