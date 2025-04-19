@@ -39,7 +39,7 @@ def initialize_app(model_dir, device, understanding_api_key, understanding_api_u
     except Exception as e:
         return f"应用初始化失败: {str(e)}"
 
-def process_audio(audio_file, instruction, chat_history, audio_text):
+def process_audio(audio_file, chat_history, audio_text):
     """处理上传的音频文件并逐步更新对话历史"""
     global sense_app
     
@@ -60,7 +60,7 @@ def process_audio(audio_file, instruction, chat_history, audio_text):
                     context += f"用户: {user_msg}\n助手: {bot_msg}\n"
         
         # 处理音频文件
-        result = sense_app.process(audio_file, instruction, context)
+        result = sense_app.process(audio_file, context=context) # Removed instruction
         
         if not result["success"]:
             yield chat_history, None, result["error"], audio_text
@@ -86,7 +86,7 @@ def process_audio(audio_file, instruction, chat_history, audio_text):
     except Exception as e:
         yield chat_history, None, f"处理过程发生错误: {str(e)}", audio_text
 
-def process_text(text_input, instruction, chat_history, audio_text):
+def process_text(text_input, chat_history, audio_text, max_tokens, temperature, top_p, top_k):
     """处理用户输入的文本并逐步更新对话历史"""
     global sense_app
     
@@ -109,7 +109,14 @@ def process_text(text_input, instruction, chat_history, audio_text):
                     context += f"用户: {user_msg}\n助手: {bot_msg}\n"
         
         # 分析用户输入的文本
-        understanding_result = sense_app.understanding.analyze(text_input, instruction, context)
+        llm_params = {
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "top_p": top_p,
+            "top_k": top_k
+            # "stop": stop # Stop might be handled differently
+        }
+        understanding_result = sense_app.understanding.analyze(text_input, context=context, llm_params=llm_params)
         
         if not understanding_result["success"]:
             yield chat_history, None, understanding_result["error"], audio_text
@@ -194,9 +201,14 @@ def main():
                     process_audio_btn = gr.Button("处理音频")
                 
                 with gr.Column():
-                    gr.Markdown("### 提问")
-                    instruction = gr.Textbox(label="对话风格", placeholder="你希望和怎样的robot对话呢？")
+                    gr.Markdown("### 提问与参数设置")
                     text_input = gr.Textbox(label="输入问题", placeholder="请根据音频内容提问")
+                    with gr.Accordion("LLM 参数设置", open=False):
+                        max_tokens = gr.Slider(minimum=1, maximum=2048, value=default_config["llm_max_tokens"], step=1, label="Max Tokens")
+                        temperature = gr.Slider(minimum=0.0, maximum=2.0, value=default_config["llm_temperature"], step=0.1, label="Temperature")
+                        top_p = gr.Slider(minimum=0.0, maximum=1.0, value=default_config["llm_top_p"], step=0.1, label="Top P")
+                        top_k = gr.Slider(minimum=1, maximum=100, value=default_config["llm_top_k"], step=1, label="Top K")
+                        # stop = gr.Textbox(label="Stop Sequences", value=default_config["llm_stop"] or "") # Stop sequences might be complex for UI
                     process_text_btn = gr.Button("继续对话")
             
             # 显示对话历史
@@ -207,17 +219,17 @@ def main():
             specialized_output = gr.Textbox(label="专业任务处理结果", visible=False)
             error_output = gr.Textbox(label="错误信息", visible=False)
             
-            def process_and_update(audio_file, instruction, history, audio_text):
+            def process_and_update(audio_file, history, audio_text):
                 """处理音频并逐步更新界面"""
-                for new_history, specialized, error, new_audio_text in process_audio(audio_file, instruction, history, audio_text):
+                for new_history, specialized, error, new_audio_text in process_audio(audio_file, history, audio_text):
                     if error:
                         yield history, history, gr.update(value="", visible=False), gr.update(value=error, visible=True), audio_text
                     else:
                         yield new_history, new_history, gr.update(value=specialized if specialized else "", visible=specialized is not None), gr.update(value="", visible=False), new_audio_text
             
-            def process_text_and_update(text, instruction, history, audio_text):
+            def process_text_and_update(text, history, audio_text, max_tokens, temperature, top_p, top_k):
                 """处理文本并逐步更新界面"""
-                for new_history, specialized, error, new_audio_text in process_text(text, instruction, history, audio_text):
+                for new_history, specialized, error, new_audio_text in process_text(text, history, audio_text, max_tokens, temperature, top_p, top_k):
                     if error:
                         yield history, history, gr.update(value="", visible=False), gr.update(value=error, visible=True), audio_text, gr.update(value=text)
                     else:
@@ -233,14 +245,14 @@ def main():
             # 处理音频按钮事件
             process_audio_btn.click(
                 fn=process_and_update,
-                inputs=[audio_input, instruction, chat_history, audio_text],
+                inputs=[audio_input, chat_history, audio_text],
                 outputs=[chat_history, chatbot, specialized_output, error_output, audio_text]
             )
             
             # 处理文本按钮事件
             process_text_btn.click(
                 fn=process_text_and_update,
-                inputs=[text_input, instruction, chat_history, audio_text],
+                inputs=[text_input, chat_history, audio_text, max_tokens, temperature, top_p, top_k],
                 outputs=[chat_history, chatbot, specialized_output, error_output, audio_text, text_input]
             )
             

@@ -24,7 +24,14 @@ DEFAULT_CONFIG = {
     # 应用配置
     "auto_init": False,  # 是否自动初始化应用
     "share": False,     # 是否创建公共链接分享界面
-    "port": 7800       # 服务端口
+    "port": 7800,       # 服务端口
+    
+    # LLM 调用参数
+    "llm_max_tokens": 512,
+    "llm_stop": None,
+    "llm_temperature": 0.7,
+    "llm_top_p": 0.7,
+    "llm_top_k": 50
 }
 
 

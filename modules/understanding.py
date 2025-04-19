@@ -18,8 +18,8 @@ class UnderstandingModule:
         self.model = model
         logger.info("理解模块初始化完成")
         
-    def analyze(self, text, instruction="", context=""):
-        """分析文本内容并返回结果，支持多轮对话"""
+    def analyze(self, text, context="", llm_params=None):
+        """分析文本内容并返回结果，支持多轮对话和自定义LLM参数"""
         # 这里可以实现连接到外部LLM API的逻辑
         # 示例实现，实际使用时需要替换为真实的API调用
         try:
@@ -34,10 +34,6 @@ class UnderstandingModule:
             
             # 构建系统提示词
             system_prompt = "你是一个专业的语音内容分析助手。你的任务是分析用户提供的语音转文字内容，并根据用户的指令提供相应的分析结果。请保持对话的连贯性，参考之前的对话历史进行回复。"
-            
-            # 如果有指令，则添加到系统提示中
-            if instruction:
-                system_prompt += f"\n请特别注意用户的指令: {instruction}"
             
             # 准备消息列表
             messages = [{"role": "system", "content": system_prompt}]
@@ -59,8 +55,18 @@ class UnderstandingModule:
                 "messages": messages
             }
             
-            # 添加温度参数，使结果更稳定
-            payload["temperature"] = 0.7
+            # 添加用户指定的LLM参数
+            if llm_params:
+                # 过滤掉值为None的参数
+                valid_llm_params = {k: v for k, v in llm_params.items() if v is not None}
+                if 'stop' in valid_llm_params and not valid_llm_params['stop']: # Handle empty stop string
+                    del valid_llm_params['stop']
+                payload.update(valid_llm_params)
+                logger.info(f"使用自定义LLM参数: {valid_llm_params}")
+            else:
+                 # 如果没有提供参数，可以设置默认值，例如温度
+                 payload["temperature"] = 0.7 # Default temperature if not provided
+                 logger.info("使用默认LLM参数")
             
             logger.debug(f"API请求: {json.dumps(payload, ensure_ascii=False)}")
             response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
