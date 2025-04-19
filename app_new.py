@@ -63,35 +63,69 @@ class SenseYourVoiceApp:
             text = transcription_result["text"]
             logger.info(f"语音转文字完成，文本长度: {len(text)}字符")
             
-            # 步骤2: 理解与分析，传入对话历史上下文
+            # 步骤2: 理解与分析，处理流式输出
             logger.info("开始进行文本理解与分析")
-            understanding_result = self.understanding.analyze(text, instruction, context)
+            understanding_stream = self.understanding.analyze(text, instruction, context)
             
-            if not understanding_result["success"]:
-                logger.error(f"理解分析失败: {understanding_result['error']}")
-                return {"success": False, "error": understanding_result["error"]}
+            full_understanding_response = ""
+            needs_specialized_task = False
+            understanding_error = None
+
+            for chunk_data in understanding_stream:
+                if not chunk_data["success"]:
+                    understanding_error = chunk_data['error']
+                    logger.error(f"理解分析流中出错: {understanding_error}")
+                    break # 停止处理流
+                
+                if chunk_data.get("response_chunk"):
+                    full_understanding_response += chunk_data["response_chunk"]
+                
+                if chunk_data["is_final"]:
+                    needs_specialized_task = chunk_data.get("needs_specialized_task", False)
+                    # 如果没有累积到响应，尝试从 final chunk 获取
+                    if not full_understanding_response:
+                         full_understanding_response = chunk_data.get("full_response", "")
+                    break # 流结束
+
+            if understanding_error:
+                return {"success": False, "error": f"理解分析失败: {understanding_error}"}
             
-            response = understanding_result["response"]
-            needs_specialized_task = understanding_result.get("needs_specialized_task", False)
+            response = full_understanding_response
             
-            # 步骤3: 如果需要，进行专业任务处理
+            # 步骤3: 如果需要，进行专业任务处理 (同样处理流式)
             if needs_specialized_task:
                 logger.info("检测到需要专业任务处理")
-                # 根据理解模块的输出确定任务类型
                 task_type = self._determine_task_type(response)
                 logger.info(f"确定任务类型: {task_type}")
                 
-                specialized_result = self.specialized_task.process_task(task_type, response)
+                specialized_task_stream = self.specialized_task.process_task(task_type, response)
                 
-                if not specialized_result["success"]:
-                    logger.error(f"专业任务处理失败: {specialized_result['error']}")
-                    return {"success": False, "error": specialized_result["error"]}
+                full_specialized_result = ""
+                specialized_error = None
+
+                for specialized_chunk_data in specialized_task_stream:
+                    if not specialized_chunk_data["success"]:
+                        specialized_error = specialized_chunk_data['error']
+                        logger.error(f"专业任务处理流中出错: {specialized_error}")
+                        break # 停止处理流
+                    
+                    if specialized_chunk_data.get("result_chunk"):
+                        full_specialized_result += specialized_chunk_data["result_chunk"]
+                    
+                    if specialized_chunk_data["is_final"]:
+                        # 如果没有累积到结果，尝试从 final chunk 获取
+                        if not full_specialized_result:
+                            full_specialized_result = specialized_chunk_data.get("full_result", "")
+                        break # 流结束
+
+                if specialized_error:
+                    return {"success": False, "error": f"专业任务处理失败: {specialized_error}"}
                 
                 final_result = {
                     "success": True,
                     "transcription": text,
                     "understanding": response,
-                    "specialized_result": specialized_result["result"]
+                    "specialized_result": full_specialized_result
                 }
             else:
                 logger.info("无需专业任务处理")
@@ -106,7 +140,7 @@ class SenseYourVoiceApp:
             
         except Exception as e:
             error_msg = f"处理过程发生未预期错误: {str(e)}"
-            logger.error(error_msg)
+            logger.error(error_msg, exc_info=True) # 添加 exc_info=True 获取更详细的traceback
             return {"success": False, "error": error_msg}
     
     def _determine_task_type(self, text):

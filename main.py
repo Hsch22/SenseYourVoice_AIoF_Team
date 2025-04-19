@@ -108,7 +108,7 @@ def process_text(text_input, chat_history, audio_text, max_tokens, temperature, 
                 if user_msg and bot_msg:
                     context += f"用户: {user_msg}\n助手: {bot_msg}\n"
         
-        # 分析用户输入的文本
+        # 分析用户输入的文本 (流式)
         llm_params = {
             "max_tokens": max_tokens,
             "temperature": temperature,
@@ -116,33 +116,64 @@ def process_text(text_input, chat_history, audio_text, max_tokens, temperature, 
             "top_k": top_k
             # "stop": stop # Stop might be handled differently
         }
-        understanding_result = sense_app.understanding.analyze(text_input, context=context, llm_params=llm_params)
         
-        if not understanding_result["success"]:
-            yield chat_history, None, understanding_result["error"], audio_text
-            return
-        
-        response = understanding_result["response"]
-        needs_specialized_task = understanding_result.get("needs_specialized_task", False)
-        
-        # 如果需要专业任务处理
-        specialized_result = None
-        if needs_specialized_task:
-            task_type = sense_app._determine_task_type(response)
-            specialized_task_result = sense_app.specialized_task.process_task(task_type, response)
-            if specialized_task_result["success"]:
-                specialized_result = specialized_task_result["result"]
-        
-        # 逐步显示回答（打字机效果）
         new_chat_history = list(chat_history) if chat_history else []
         new_chat_history.append((text_input, ""))
-        for i in range(len(response) + 1):
-            time.sleep(0.05)  # 控制打字速度
-            new_chat_history[-1] = (text_input, response[:i])
-            yield new_chat_history, specialized_result, None, audio_text
-        
-        # 确保完整输出
-        yield new_chat_history, specialized_result, None, audio_text
+        full_response = ""
+        needs_specialized_task = False
+        specialized_result_output = None # 用于存储专业任务的最终结果或流式块
+
+        # 处理理解模块的流式输出
+        understanding_stream = sense_app.understanding.analyze(text_input, context=context, llm_params=llm_params)
+        for chunk_data in understanding_stream:
+            if not chunk_data["success"]:
+                yield new_chat_history, specialized_result_output, chunk_data["error"], audio_text
+                return
+            
+            if chunk_data["is_final"]:
+                needs_specialized_task = chunk_data.get("needs_specialized_task", False)
+                full_response = chunk_data.get("full_response", full_response) # 获取完整响应
+                break # 理解流结束
+            
+            response_chunk = chunk_data.get("response_chunk", "")
+            if response_chunk:
+                full_response += response_chunk
+                new_chat_history[-1] = (text_input, full_response)
+                yield new_chat_history, specialized_result_output, None, audio_text
+
+        # 如果需要专业任务处理 (流式)
+        if needs_specialized_task:
+            task_type = sense_app._determine_task_type(full_response) # 使用完整响应判断任务类型
+            specialized_task_stream = sense_app.specialized_task.process_task(task_type, full_response)
+            
+            full_specialized_result = "" # 用于累积专业任务的流式结果
+            specialized_result_output = "" # 初始化专业任务输出为空字符串
+            
+            for specialized_chunk_data in specialized_task_stream:
+                if not specialized_chunk_data["success"]:
+                    # 专业任务出错，也需要更新聊天记录（显示之前的理解结果）
+                    yield new_chat_history, specialized_result_output, specialized_chunk_data["error"], audio_text
+                    return
+                
+                if specialized_chunk_data["is_final"]:
+                    # 可选：获取完整的专业任务结果
+                    # full_specialized_result = specialized_chunk_data.get("full_result", full_specialized_result)
+                    break # 专业任务流结束
+                
+                result_chunk = specialized_chunk_data.get("result_chunk", "")
+                if result_chunk:
+                    full_specialized_result += result_chunk
+                    specialized_result_output = full_specialized_result # 更新输出
+                    # 在专业任务流式输出时，聊天记录通常保持不变（显示理解结果）
+                    # 但专业任务结果区域会更新
+                    yield new_chat_history, specialized_result_output, None, audio_text
+            
+            # 专业任务流结束后，确保最终的专业结果被传递
+            specialized_result_output = full_specialized_result
+
+        # 确保最终状态被传递
+        yield new_chat_history, specialized_result_output, None, audio_text
+
     except Exception as e:
         yield chat_history, None, f"处理过程发生错误: {str(e)}", audio_text
 
