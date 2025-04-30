@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger('SpecializedTaskModule')
 
 class SpecializedTaskModule:
-    def __init__(self, api_key=None, api_url=None, model="gpt-4"):
+    def __init__(self, api_key, api_url, model):
         """专业任务处理模块，用于处理代码、数学问题等"""
         self.api_key = api_key
         self.api_url = api_url

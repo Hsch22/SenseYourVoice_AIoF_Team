@@ -247,7 +247,8 @@ def main():
             
             clear_btn = gr.Button("清除对话历史")
             
-            specialized_output = gr.Textbox(label="专业任务处理结果", visible=False)
+            specialized_output = gr.Markdown(label="专业任务处理结果", visible=False)
+            # specialized_output = gr.Textbox(label="专业任务处理结果", visible=False)
             error_output = gr.Textbox(label="错误信息", visible=False)
             
             def process_and_update(audio_file, history, audio_text):
@@ -267,6 +268,8 @@ def main():
                         yield new_history, new_history, gr.update(value=specialized if specialized else "", visible=specialized is not None), gr.update(value="", visible=False), new_audio_text, gr.update(value=text)
                 
                 # 在处理完后清空输入框
+                # 在process_text_and_update函数中，修改yield语句
+                # yield new_history, new_history, gr.update(value=specialized if specialized else "", visible=specialized is not None), gr.update(value="", visible=False), new_audio_text, gr.update(value=text)
                 yield new_history, new_history, gr.update(value=specialized if specialized else "", visible=specialized is not None), gr.update(value="", visible=False), new_audio_text, gr.update(value="")
             
             def clear_chat_history():
