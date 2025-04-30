@@ -7,6 +7,7 @@ import sys
 import argparse
 import torch
 import gradio as gr
+import gradio.themes as grt
 import time
 
 # 导入配置和主应用
@@ -193,31 +194,57 @@ def main():
     parser.add_argument("--share", action="store_true", default=default_config["share"], help="创建公共链接分享界面")
     parser.add_argument("--port", type=int, default=default_config["port"], help="服务端口")
     args = parser.parse_args()
-    
+
     # 创建Gradio界面
-    with gr.Blocks(title="SenseYourVoice - 语音理解与处理") as demo:
+    with gr.Blocks(title="SenseYourVoice - 语音理解与处理",theme=grt.Citrus()) as demo:
         gr.Markdown("""
         # SenseYourVoice - 语音理解与处理
         上传音频文件，系统将解读并记住内容，然后您可以进行多次问答互动。
         """)
         
         # 应用设置部分
+        # with gr.Tab("应用设置"):
+        #     model_dir = gr.Textbox(label="语音模型目录", value=args.model_dir)
+        #     device = gr.Dropdown(label="设备", choices=["cuda:0", "cpu"], value=args.device)
+        #     understanding_api_key = gr.Textbox(label="理解模块API密钥", value=args.understanding_api_key or "")
+        #     understanding_api_url = gr.Textbox(label="理解模块API地址", value=args.understanding_api_url or "")
+        #     specialized_api_key = gr.Textbox(label="专业任务模块API密钥", value=args.specialized_api_key or "")
+        #     specialized_api_url = gr.Textbox(label="专业任务模块API地址", value=args.specialized_api_url or "")
+            
+        #     init_btn = gr.Button("初始化应用")
+        #     init_output = gr.Textbox(label="初始化状态")
+            
+        #     init_btn.click(
+        #         fn=initialize_app,
+        #         inputs=[model_dir, device, understanding_api_key, understanding_api_url, specialized_api_key, specialized_api_url],
+        #         outputs=init_output
+        #     )
+
         with gr.Tab("应用设置"):
-            model_dir = gr.Textbox(label="语音模型目录", value=args.model_dir)
-            device = gr.Dropdown(label="设备", choices=["cuda:0", "cpu"], value=args.device)
-            understanding_api_key = gr.Textbox(label="理解模块API密钥", value=args.understanding_api_key or "")
-            understanding_api_url = gr.Textbox(label="理解模块API地址", value=args.understanding_api_url or "")
-            specialized_api_key = gr.Textbox(label="专业任务模块API密钥", value=args.specialized_api_key or "")
-            specialized_api_url = gr.Textbox(label="专业任务模块API地址", value=args.specialized_api_url or "")
-            
-            init_btn = gr.Button("初始化应用")
-            init_output = gr.Textbox(label="初始化状态")
-            
+            with gr.Row():
+                with gr.Column(scale=1): # 左侧放模型和设备
+                    model_dir = gr.Textbox(label="语音模型目录", value=args.model_dir)
+                    device = gr.Dropdown(label="设备", choices=["cuda:0", "cpu"], value=args.device)
+                with gr.Column(scale=2): # 右侧放API设置，并分组
+                    with gr.Group():
+                        gr.Markdown("### 理解模块 API") # 添加小标题
+                        understanding_api_key = gr.Textbox(label="API密钥", value=args.understanding_api_key or "", type="password") # 使用密码类型
+                        understanding_api_url = gr.Textbox(label="API地址", value=args.understanding_api_url or "")
+                    with gr.Group():
+                        gr.Markdown("### 专业任务模块 API") # 添加小标题
+                        specialized_api_key = gr.Textbox(label="API密钥", value=args.specialized_api_key or "", type="password") # 使用密码类型
+                        specialized_api_url = gr.Textbox(label="API地址", value=args.specialized_api_url or "")
+
+            init_btn = gr.Button("初始化应用", variant="primary") # 使用 primary 变体突出按钮
+            init_output = gr.Textbox(label="初始化状态", interactive=False) # 设置为不可编辑
+
+            # ... click 事件不变 ...
             init_btn.click(
                 fn=initialize_app,
                 inputs=[model_dir, device, understanding_api_key, understanding_api_url, specialized_api_key, specialized_api_url],
                 outputs=init_output
             )
+
         
         # 语音处理部分
         with gr.Tab("语音处理"):
@@ -234,7 +261,7 @@ def main():
                 with gr.Column():
                     gr.Markdown("### 提问与参数设置")
                     text_input = gr.Textbox(label="输入问题", placeholder="请根据音频内容提问")
-                    with gr.Accordion("LLM 参数设置", open=False):
+                    with gr.Accordion("参数设置", open=False):
                         max_tokens = gr.Slider(minimum=1, maximum=2048, value=default_config["llm_max_tokens"], step=1, label="Max Tokens")
                         temperature = gr.Slider(minimum=0.0, maximum=2.0, value=default_config["llm_temperature"], step=0.1, label="Temperature")
                         top_p = gr.Slider(minimum=0.0, maximum=1.0, value=default_config["llm_top_p"], step=0.1, label="Top P")
