@@ -1,10 +1,27 @@
-torch<=2.3
-torchaudio
-modelscope
-huggingface
-huggingface_hub
+# SenseYourVoice 项目依赖
+# 核心依赖
+torch>=1.10.0
+torchaudio>=0.10.0
 funasr>=1.1.3
-numpy<=1.26.4
-gradio
-fastapi>=0.111.1
+numpy>=1.20.0
+
+# 模型和数据处理
+modelscope
+huggingface_hub
+librosa>=0.9.0
+kaldi_native_fbank
+jieba
+
+# Web界面和API
+gradio>=3.0.0
+fastapi>=0.95.0
 requests
+uvicorn
+
+# ONNX支持
+onnxruntime
+onnx
+
+# 可选依赖
+pyyaml
+rich

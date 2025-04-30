@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
-# Copyright (c) 2023. All Rights Reserved.
 
 import os
 import torch
 
 # 默认配置
 DEFAULT_CONFIG = {
-    # 语音转文字模块配置
     "model_dir": "iic/SenseVoiceSmall",
     "device": "cuda:0" if torch.cuda.is_available() else "cpu",
     
