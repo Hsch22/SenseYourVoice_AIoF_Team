@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
 import requests
@@ -80,7 +79,7 @@ class UnderstandingModule:
                                 yield {
                                     "success": True,
                                     "response_chunk": content_chunk,
-                                    "needs_specialized_task": False, # 暂时无法在流中判断
+                                    "needs_specialized_task": False, 
                                     "is_final": False
                                 }
                         except json.JSONDecodeError as e:
@@ -98,7 +97,7 @@ class UnderstandingModule:
                     "response_chunk": None, # 标记流结束
                     "needs_specialized_task": needs_specialized,
                     "is_final": True,
-                    "full_response": full_response_text # 可选：返回完整响应
+                    "full_response": full_response_text 
                 }
 
             else:

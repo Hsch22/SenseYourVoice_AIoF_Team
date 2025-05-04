@@ -1,28 +1,45 @@
-.idea
-./__pycache__/
+# Python缓存文件
+__pycache__/
 */__pycache__/
 */*/__pycache__/
-*/*/*/__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+.env/
+
+# 分发/打包
+dist/
+build/
+*.egg-info/
+
+# IDE相关文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 操作系统文件
 .DS_Store
-init_model/
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 模型和大文件
+*.model
+*.onnx
+*.bin
 *.tar.gz
+*.zip
+
+# 项目特定文件夹
+modelscope_models/
+outputs*/
+
+# 临时文件和测试文件
+temp/
 test_local/
-RapidASR
-export/*
-*.pyc
-.eggs
-MaaS-lib
-.gitignore
-.egg*
-dist
-build
-funasr.egg-info
-docs/_build
-modelscope
-samples
-.ipynb_checkpoints
-outputs*
-emotion2vec*
-GPT-SoVITS*
-modelscope_models
-examples/aishell/llm_asr_nar/*
+.ipynb_checkpoints/

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
 import os
@@ -75,9 +74,8 @@ def process_audio(audio_file, chat_history, audio_text):
         new_chat_history = list(chat_history) if chat_history else []
         new_chat_history.append(("", system_message))
         
-        # 逐步显示系统反馈（打字机效果）
         for i in range(len(system_message) + 1):
-            time.sleep(0.05)  # 控制打字速度
+            time.sleep(0.05) 
             new_chat_history[-1] = ("", system_message[:i])
             yield new_chat_history, None, None, audio_text
         

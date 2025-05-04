@@ -8,21 +8,7 @@ def ctc_forced_align(
     blank: int = 0,
     ignore_id: int = -1,
 ) -> torch.Tensor:
-    """Align a CTC label sequence to an emission.
 
-    Args:
-        log_probs (Tensor): log probability of CTC emission output.
-            Tensor of shape `(B, T, C)`. where `B` is the batch size, `T` is the input length,
-            `C` is the number of characters in alphabet including blank.
-        targets (Tensor): Target sequence. Tensor of shape `(B, L)`,
-            where `L` is the target length.
-        input_lengths (Tensor):
-            Lengths of the inputs (max value must each be <= `T`). 1-D Tensor of shape `(B,)`.
-        target_lengths (Tensor):
-            Lengths of the targets. 1-D Tensor of shape `(B,)`.
-        blank_id (int, optional): The index of blank symbol in CTC emission. (Default: 0)
-        ignore_id (int, optional): The index of ignore symbol in CTC emission. (Default: -1)
-    """
     targets[targets == ignore_id] = blank
 
     batch_size, input_time_size, _ = log_probs.size()

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
 import os
@@ -23,7 +22,6 @@ class VoiceToTextModule:
         
     def initialize_model(self):
         try:
-            # 修改模型初始化方式，与 demo1.py 或 webui.py 保持一致
             self.model = AutoModel(
                 model=self.model_dir,
                 trust_remote_code=True,
@@ -38,7 +36,6 @@ class VoiceToTextModule:
             logger.error(f"语音转文字模块初始化失败: {error_msg}")
             self.init_error = error_msg  # 保存错误信息
     
-    # 定义表情符号和事件标记字典，与webui.py保持一致
     emoji_dict = {
         "<|nospeech|><|Event_UNK|>": "❓",
         "<|zh|>": "",
